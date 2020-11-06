@@ -37,6 +37,8 @@ from models.loss import WaveFlowLossDataParallel
 from mel2samp import Mel2Samp, MAX_WAV_VALUE
 from scipy.io.wavfile import write
 
+import tqdm
+
 
 def load_checkpoint(checkpoint_path, model, optimizer, scheduler):
     assert os.path.isfile(checkpoint_path)
@@ -255,7 +257,7 @@ def train(model, num_gpus, output_directory, epochs, learning_rate, lr_decay_ste
     # ================ MAIN TRAINNIG LOOP! ===================
     for epoch in range(epoch_offset, epochs):
         print("Epoch: {}".format(epoch))
-        for i, batch in enumerate(train_loader):
+        for i, batch in tqdm.tqdm(enumerate(train_loader)):
             tic = time.time()
 
             model.zero_grad()
@@ -285,7 +287,7 @@ def train(model, num_gpus, output_directory, epochs, learning_rate, lr_decay_ste
 
             toc = time.time() - tic
 
-            print("{}:\t{:.9f}, {:.4f} seconds".format(iteration, reduced_loss, toc))
+            #print("{}:\t{:.9f}, {:.4f} seconds".format(iteration, reduced_loss, toc))
             if with_tensorboard:
                 logger.add_scalar('training_loss', reduced_loss, i + len(train_loader) * epoch)
                 logger.add_scalar('lr', get_lr(optimizer), i + len(train_loader) * epoch)

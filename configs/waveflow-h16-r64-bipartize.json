@@ -1,7 +1,7 @@
 {
     "train_config": {
         "fp16_run": false,
-        "output_directory": "experiments",
+        "output_directory": "waveflow-h16-r64-bipartize",
         "epochs": 100000,
         "learning_rate": 2e-4,
         "lr_decay_step": 3000000,
