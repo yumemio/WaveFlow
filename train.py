@@ -199,11 +199,11 @@ def train(model, num_gpus, output_directory, epochs, learning_rate, lr_decay_ste
         if args.warm_start:
             print("INFO: --warm_start. optimizer and scheduler are initialized and strict=False for load_state_dict().")
             if args.average_checkpoint == 0:
-                model, optimizer, scheduler, iteration = load_checkpoint_warm_start(checkpoint_path, model, optimizer,
-                                                                                    scheduler)
+                model, optimizer, scheduler, iteration = load_checkpoint_warm_start(
+                        checkpoint_path, model, optimizer, scheduler)
             else:
-                print("INFO: --average_checkpoint > 0. loading an averaged weight of last {} checkpoints...".format(
-                    args.average_checkpoint))
+                print("INFO: --average_checkpoint > 0. loading an averaged "
+                      "weight of last {} checkpoints...".format(args.average_checkpoint))
                 model, optimizer, scheduler, iteration = load_averaged_checkpoint_warm_start(checkpoint_path, model,
                                                                                              optimizer, scheduler)
         else:
@@ -257,7 +257,7 @@ def train(model, num_gpus, output_directory, epochs, learning_rate, lr_decay_ste
     # ================ MAIN TRAINNIG LOOP! ===================
     for epoch in range(epoch_offset, epochs):
         print("Epoch: {}".format(epoch))
-        for i, batch in tqdm.tqdm(enumerate(train_loader)):
+        for i, batch in tqdm.tqdm(enumerate(train_loader), total=len(train_loader)):
             tic = time.time()
 
             model.zero_grad()
@@ -385,6 +385,8 @@ if __name__ == "__main__":
                         help='JSON file for configuration')
     parser.add_argument('-w', '--warm_start', action='store_true',
                         help='warm start. i.e. load_state_dict() with strict=False and optimizer & scheduler are initialized.')
+    parser.add_argument('-r', '--resume', type=float, default=None,
+                        help='epsilon value for polyak averaging. only applied if -a > 0. defaults to None (plain averaging)')
     parser.add_argument('-s', '--synthesize', action='store_true',
                         help='run synthesize loop only. does not train or evaluate the model.')
     parser.add_argument('-t', '--temp', type=float, default=1.,
