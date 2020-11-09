@@ -38,6 +38,8 @@ from mel2samp import Mel2Samp, MAX_WAV_VALUE
 from scipy.io.wavfile import write
 
 import tqdm
+import logging
+logging.basicConfig(level=logging.INFO)
 
 
 def load_checkpoint(checkpoint_path, model, optimizer, scheduler):
@@ -187,7 +189,8 @@ def train(model, num_gpus, output_directory, epochs, learning_rate, lr_decay_ste
     criterion = WaveFlowLossDataParallel(sigma)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=lr_decay_step, gamma=lr_decay_gamma)
+    scheduler = torch.optim.lr_scheduler.StepLR(
+        optimizer, step_size=lr_decay_step, gamma=lr_decay_gamma)
 
     if fp16_run:
         from apex import amp
@@ -196,19 +199,27 @@ def train(model, num_gpus, output_directory, epochs, learning_rate, lr_decay_ste
     # Load checkpoint if one exists
     iteration = 0
     if checkpoint_path != "":
-        if args.warm_start:
+        # Warm-start
+        if args.warm_start and args.average_checkpoint == 0:
             print("INFO: --warm_start. optimizer and scheduler are initialized and strict=False for load_state_dict().")
-            if args.average_checkpoint == 0:
-                model, optimizer, scheduler, iteration = load_checkpoint_warm_start(
-                        checkpoint_path, model, optimizer, scheduler)
-            else:
-                print("INFO: --average_checkpoint > 0. loading an averaged "
-                      "weight of last {} checkpoints...".format(args.average_checkpoint))
-                model, optimizer, scheduler, iteration = load_averaged_checkpoint_warm_start(checkpoint_path, model,
-                                                                                             optimizer, scheduler)
+            model, optimizer, scheduler, iteration = load_checkpoint_warm_start(
+                    checkpoint_path, model, optimizer, scheduler)
+        elif args.warm_start and args.average_checkpoint != 0:
+            print("INFO: --average_checkpoint > 0. loading an averaged "
+                  "weight of last {} checkpoints...".format(args.average_checkpoint))
+            model, optimizer, scheduler, iteration = load_averaged_checkpoint_warm_start(
+                checkpoint_path, model, optimizer, scheduler
+            )
+        # Resume
+        elif args.resume:
+            logging.INFO("--resume. Resuming the training from the last "
+                "checkpoint found in {}.".format(checkpoint_path))
+            last_checkpoint = last_n_checkpoints(checkpoint_path, 1)
+            model, optimizer, scheduler, iteration = \
+                load_checkpoint(last_checkpoint, model, optimizer, scheduler)
         else:
-            model, optimizer, scheduler, iteration = load_checkpoint(checkpoint_path, model,
-                                                                     optimizer, scheduler)
+            model, optimizer, scheduler, iteration = \
+                load_checkpoint(checkpoint_path, model, optimizer, scheduler)
         iteration += 1  # next iteration is iteration + 1
 
     if num_gpus > 1:
@@ -395,6 +406,9 @@ if __name__ == "__main__":
                         help='checkpoint averaging. averages the given number of latest checkpoints for synthesize.')
     parser.add_argument('-e', '--epsilon', type=float, default=None,
                         help='epsilon value for polyak averaging. only applied if -a > 0. defaults to None (plain averaging)')
+    parser.add_argument('-r', '--resume', action='store_true',
+                        help='resume training from the last checkpoint found '
+                        'in checkpoint_path directory.')
     args = parser.parse_args()
 
     # Parse configs.  Globals nicer in this case
