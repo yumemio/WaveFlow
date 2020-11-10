@@ -396,8 +396,6 @@ if __name__ == "__main__":
                         help='JSON file for configuration')
     parser.add_argument('-w', '--warm_start', action='store_true',
                         help='warm start. i.e. load_state_dict() with strict=False and optimizer & scheduler are initialized.')
-    parser.add_argument('-r', '--resume', type=float, default=None,
-                        help='epsilon value for polyak averaging. only applied if -a > 0. defaults to None (plain averaging)')
     parser.add_argument('-s', '--synthesize', action='store_true',
                         help='run synthesize loop only. does not train or evaluate the model.')
     parser.add_argument('-t', '--temp', type=float, default=1.,
