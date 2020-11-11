@@ -198,7 +198,14 @@ def train(model, num_gpus, output_directory, epochs, learning_rate, lr_decay_ste
 
     # Load checkpoint if one exists
     iteration = 0
-    if checkpoint_path != "":
+    if args.resume:
+        logging.info("--resume. Resuming the training from the last "
+            "checkpoint found in {}.".format(output_directory))
+        last_checkpoint = last_n_checkpoints(output_directory, 1)[0]
+        model, optimizer, scheduler, iteration = \
+            load_checkpoint(last_checkpoint, model, optimizer, scheduler)
+
+    elif checkpoint_path != "":
         # Warm-start
         if args.warm_start and args.average_checkpoint == 0:
             print("INFO: --warm_start. optimizer and scheduler are initialized and strict=False for load_state_dict().")
@@ -210,13 +217,6 @@ def train(model, num_gpus, output_directory, epochs, learning_rate, lr_decay_ste
             model, optimizer, scheduler, iteration = load_averaged_checkpoint_warm_start(
                 checkpoint_path, model, optimizer, scheduler
             )
-        # Resume
-        elif args.resume:
-            logging.INFO("--resume. Resuming the training from the last "
-                "checkpoint found in {}.".format(checkpoint_path))
-            last_checkpoint = last_n_checkpoints(checkpoint_path, 1)
-            model, optimizer, scheduler, iteration = \
-                load_checkpoint(last_checkpoint, model, optimizer, scheduler)
         else:
             model, optimizer, scheduler, iteration = \
                 load_checkpoint(checkpoint_path, model, optimizer, scheduler)
