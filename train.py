@@ -199,9 +199,12 @@ def train(model, num_gpus, output_directory, epochs, learning_rate, lr_decay_ste
     # Load checkpoint if one exists
     iteration = 0
     if args.resume:
+        model_directory = os.path.join(
+            output_directory, waveflow_config["model_name"]
+        )
         logging.info("--resume. Resuming the training from the last "
-            "checkpoint found in {}.".format(output_directory))
-        last_checkpoint = last_n_checkpoints(output_directory, 1)[0]
+            "checkpoint found in {}.".format(model_directory))
+        last_checkpoint = last_n_checkpoints(model_directory, 1)[0]
         model, optimizer, scheduler, iteration = \
             load_checkpoint(last_checkpoint, model, optimizer, scheduler)
 
